@@ -1,0 +1,903 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Enhanced Scratch Card Game</title>
+    <style>
+        /* Keyframe Animations */
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+    
+        @keyframes scaleIn {
+            from { transform: scale(0.9); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+    
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+    
+        /* Base Styles */
+        body {
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #f6f8fd 0%, #e9eef9 100%);
+            font-family: system-ui, -apple-system, Arial, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+    
+        .card {
+            width: 100%;
+            max-width: 400px;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            margin: auto;
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            transition: transform 0.3s ease;
+        }
+    
+        /* Gift Container */
+        .gift-container {
+            text-align: center;
+            padding: 32px;
+            cursor: pointer;
+            transition: all 0.3s ease-out;
+            background: linear-gradient(135deg, rgba(147, 51, 234, 0.05), rgba(236, 72, 153, 0.05));
+        }
+    
+        .gift-container:hover {
+            background: linear-gradient(135deg, rgba(147, 51, 234, 0.1), rgba(236, 72, 153, 0.1));
+            transform: translateY(-2px);
+        }
+    
+        .gift-title {
+    font-size: 28px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    margin-bottom: 24px;
+    background: linear-gradient(135deg, #9333ea, #ec4899);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;  /* Space between lines */
+}
+.gift-title span {
+    display: block;
+}
+    
+        .gift-emoji {
+            font-size: 72px;
+            margin-bottom: 24px;
+            animation: bounce 2s infinite;
+        }
+    
+        .gift-text {
+            color: #666;
+            position: relative;
+            display: inline-block;
+        }
+    
+        .gift-text::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            bottom: -2px;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(to right, #9333ea, #ec4899);
+            transform: scaleX(0);
+            transition: transform 0.3s ease;
+        }
+    
+        .gift-container:hover .gift-text::after {
+            transform: scaleX(1);
+        }
+    
+        /* Game Container */
+        #gameContainer {
+            display: none;
+            background: linear-gradient(135deg, #9333ea, #ec4899);
+            padding: 32px;
+            color: white;
+            opacity: 0;
+            transition: opacity 0.3s ease-out;
+        }
+    
+        #gameContainer.visible {
+            opacity: 1;
+        }
+    
+        .game-title {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+    
+        .game-title h2 {
+            margin: 0 0 12px 0;
+            font-size: 28px;
+            font-weight: 600;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+    
+        /* Canvas Sections */
+        .canvas-section {
+            margin: 30px auto;
+            width: 280px;
+        }
+    
+        .canvas-container {
+            position: relative;
+            margin: 0 auto;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+    
+        .numbers-section {
+            height: 100px;
+            background: rgba(255, 255, 255, 0.1);
+        }
+    
+        .game-section {
+            height: 240px;
+            margin-top: 40px;
+        }
+    
+        .content-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(4px);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1;
+        }
+    
+        /* Numbers Display */
+        .numbers-display {
+            display: flex;
+            gap: 24px;
+            font-size: 22px;
+            font-weight: bold;
+        }
+    
+        .numbers-display span {
+            padding: 6px 12px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 6px;
+            transition: transform 0.2s ease;
+        }
+    
+        .numbers-display span:hover {
+            transform: translateY(-2px);
+        }
+    
+        /* Game Grid */
+        .game-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            width: 100%;
+            height: 100%;
+            padding: 12px;
+            box-sizing: border-box;
+            background-image: linear-gradient(rgba(255, 255, 255, 0.1) 1px, transparent 1px),
+                            linear-gradient(90deg, rgba(255, 255, 255, 0.1) 1px, transparent 1px);
+            background-size: 33.33% 33.33%;
+        }
+    
+        .game-cell {
+            padding: 8px 4px;
+            min-height: 50px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            transition: all 0.2s ease;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            position: relative;
+            overflow: hidden;
+        }
+    
+        .game-cell::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 200%;
+            height: 100%;
+            background: linear-gradient(90deg, 
+                transparent, 
+                rgba(255, 255, 255, 0.2), 
+                transparent);
+            animation: shimmer 2s infinite;
+        }
+    
+        .game-cell strong {
+            font-size: 20px;
+            margin-bottom: 4px;
+            position: relative;
+            z-index: 1;
+        }
+    
+        .game-cell small {
+            font-size: 14px;
+            opacity: 0.9;
+            position: relative;
+            z-index: 1;
+        }
+    
+        /* Canvas Element */
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+            z-index: 2;
+            border-radius: 8px;
+            touch-action: none;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+    
+        /* Win Message */
+        .win-message {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(8px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+    
+        .win-content {
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            padding: 40px;
+            border-radius: 16px;
+            text-align: center;
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            animation: scaleIn 0.3s ease-out;
+            max-width: 80%;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+        }
+    
+        /* Button Styles */
+        .play-button {
+            background: linear-gradient(to right, #9333ea, #ec4899);
+            color: white;
+            border: none;
+            padding: 14px 36px;
+            border-radius: 24px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 24px;
+            transition: all 0.2s ease;
+            font-weight: 600;
+            position: relative;
+            overflow: hidden;
+        }
+    
+        .play-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(147, 51, 234, 0.3);
+        }
+    
+        .play-button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 200%;
+            height: 100%;
+            background: linear-gradient(90deg, 
+                transparent, 
+                rgba(255, 255, 255, 0.2), 
+                transparent);
+            animation: shimmer 2s infinite;
+        }
+    
+        /* Section Titles */
+        .section-title {
+            text-align: center;
+            margin-bottom: 12px;
+            font-size: 14px;
+            opacity: 0.9;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            position: relative;
+            display: inline-block;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 0 12px;
+        }
+    
+        .section-title::before,
+        .section-title::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            width: 20px;
+            height: 1px;
+            background: currentColor;
+            opacity: 0.5;
+        }
+    
+        .section-title::before {
+            right: 100%;
+        }
+    
+        .section-title::after {
+            left: 100%;
+        }
+    
+        /* Bonus Game */
+        #bonusContainer {
+            display: none;
+            text-align: center;
+            padding: 32px;
+            background: linear-gradient(135deg, #9333ea, #ec4899);
+            color: white;
+            opacity: 0;
+            transition: opacity 0.3s ease-out;
+        }
+    
+        #bonusContainer.visible {
+            opacity: 1;
+        }
+    
+        .bonus-container {
+            position: relative;
+            width: 280px;
+            height: 200px;
+            margin: 30px auto;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            background: rgba(255, 255, 255, 0.1);
+        }
+    
+        .bonus-grid {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            padding: 12px;
+            box-sizing: border-box;
+            backdrop-filter: blur(4px);
+            border-radius: 8px;
+            z-index: 1;
+        }
+    
+        .bonus-cell {
+            font-size: 22px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 6px;
+            transition: transform 0.2s ease;
+            position: relative;
+            overflow: hidden;
+            padding: 8px;
+        }
+    
+        .bonus-cell::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 200%;
+            height: 100%;
+            background: linear-gradient(90deg, 
+                transparent, 
+                rgba(255, 255, 255, 0.2), 
+                transparent);
+            animation: shimmer 2s infinite;
+        }
+    
+        /* Progress Bar */
+        .progress-bar {
+            position: absolute;
+            bottom: -8px;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+    
+        .progress-fill {
+            height: 100%;
+            width: 0;
+            background: linear-gradient(to right, #9333ea, #ec4899);
+            transition: width 0.3s ease-out;
+        }
+    
+        /* Responsive Design */
+        @media (max-width: 480px) {
+            body {
+                padding: 16px;
+            }
+    
+            .card {
+                margin: 10px;
+            }
+    
+            .gift-emoji {
+                font-size: 56px;
+            }
+    
+            .canvas-section {
+                width: 100%;
+                max-width: 280px;
+            }
+    
+            .game-title h2 {
+                font-size: 24px;
+            }
+    
+            .numbers-display {
+                gap: 20px;
+                font-size: 20px;
+            }
+        }
+        .confetti-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+}
+
+.confetti-particle {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    pointer-events: none;
+    will-change: transform;
+}
+
+/* Make sure your win message overlay has the correct z-index */
+.win-message {
+    /* ... existing styles ... */
+    z-index: 1000;  /* This puts it between confetti layers */
+}
+
+.win-content {
+    /* ... existing styles ... */
+    z-index: 1002;  /* This puts it between middle and front confetti layers */
+}
+    </style>
+</head>
+<body>
+    <div class="card">
+        <!-- Gift View Section -->
+        <div id="giftView" class="gift-container" onclick="startGame()">
+            <div class="gift-title">
+                <span>Čaukó láska</span>
+                <span>Všetko najlepšie</span>
+            </div>
+            <div class="gift-emoji">🎁</div>
+            <div class="gift-text">Klikni na darček</div>
+        </div>
+    
+        <!-- Main Game Section -->
+        <div id="gameContainer">
+            <div class="game-title">
+                <h2>Meninové čísla</h2>
+                <p class="subtitle">Nájdi číslo, ktoré sa zhoduje s tým tvojím a vyhraj uvedenú sumu</p>
+            </div>
+    
+            <div class="canvas-section">
+                <!-- Numbers Section -->
+                <div class="section-title">Tvoje čísla</div>
+                <div class="canvas-container numbers-section">
+                    <div class="content-layer">
+                        <div class="numbers-display">
+                            <span class="number-item">4</span>
+                            <span class="number-item">30</span>
+                            <span class="number-item">11</span>
+                            <span class="number-item">9</span>
+                        </div>
+                    </div>
+                    <canvas id="numbersCanvas"></canvas>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="numbersProgress"></div>
+                    </div>
+                </div>
+    
+                <!-- Game Grid Section -->
+                <div class="section-title" style="margin-top: 30px;">Hra</div>
+                <div class="canvas-container game-section">
+                    <div class="content-layer">
+                        <div class="game-grid">
+                            <div class="game-cell">
+                                <strong>15</strong>
+                                <small>10€</small>
+                            </div>
+                            <div class="game-cell">
+                                <strong>7</strong>
+                                <small>15€</small>
+                            </div>
+                            <div class="game-cell">
+                                <strong>4</strong>
+                                <small>5€</small>
+                            </div>
+                            <div class="game-cell">
+                                <strong>23</strong>
+                                <small>20€</small>
+                            </div>
+                            <div class="game-cell">
+                                <strong>25</strong>
+                                <small>10€</small>
+                            </div>
+                            <div class="game-cell">
+                                <strong>18</strong>
+                                <small>15€</small>
+                            </div>
+                            <div class="game-cell">
+                                <strong>16</strong>
+                                <small>5€</small>
+                            </div>
+                            <div class="game-cell">
+                                <strong>14</strong>
+                                <small>20€</small>
+                            </div>
+                            <div class="game-cell">
+                                <strong>22</strong>
+                                <small>10€</small>
+                            </div>
+                        </div>
+                    </div>
+                    <canvas id="gameCanvas"></canvas>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="gameProgress"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    
+        <!-- Win Message -->
+        <div id="winMessage" class="win-message">
+            <div class="win-content">
+                <div class="win-icon">🎉</div>
+                <h3>Gratulujem!</h3>
+                <p class="win-text">Vyhrala si 5€ v tejto lotérii!</p>
+                <p class="bonus-question">Chceš si zahrať o bonus?</p>
+                <button class="play-button" onclick="startBonus()">
+                    <span class="button-text">Hrat!</span>
+                </button>
+            </div>
+        </div>
+    
+        <!-- Bonus Game Section -->
+        <div id="bonusContainer">
+            <h2>Bonus hra</h2>
+            <p class="bonus-description">Nájdi tri rovnaké symboly a vyhraj cenu, ktorá sa za nimi schováva</p>
+            <div class="bonus-container">
+                <div class="bonus-grid">
+                    <div class="bonus-cell">☕</div>
+                    <div class="bonus-cell">🌈</div>
+                    <div class="bonus-cell">🌟</div>
+                    <div class="bonus-cell">🍀</div>
+                    <div class="bonus-cell">🍀</div>
+                    <div class="bonus-cell">🌈</div>
+                    <div class="bonus-cell">☕</div>
+                    <div class="bonus-cell">🌟</div>
+                    <div class="bonus-cell">☕</div>
+                </div>
+                <canvas id="bonusCanvas"></canvas>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="bonusProgress"></div>
+                </div>
+            </div>
+        </div>
+    
+        <!-- Bonus Win Message -->
+        <div id="bonusWinMessage" class="win-message">
+            <div class="win-content">
+                <div class="win-icon">🎉</div>
+                <h3>Gratulujem!</h3>
+                <p class="win-text">Podarilo sa ti nájsť 3 rovnaké symboly!</p>
+                <div class="bonus-symbols">☕ ☕ ☕</div>
+                <p class="prize-text">Tvoja cena ti bude odovzdaná už čoskoro! ❤️</p>
+            </div>
+        </div>
+    </div>
+    <script>
+        let activeCanvas = null;
+        let isDragging = false;
+        let lastPosition = { x: 0, y: 0 };
+        let isGameComplete = false;
+        let isBonusComplete = false;
+        
+        function startGame() {
+            const giftView = document.getElementById('giftView');
+            const gameContainer = document.getElementById('gameContainer');
+            
+            giftView.style.opacity = '0';
+            setTimeout(() => {
+                giftView.style.display = 'none';
+                gameContainer.style.display = 'block';
+                setTimeout(() => {
+                    gameContainer.classList.add('visible');
+                }, 50);
+            }, 300);
+        
+            initializeCanvases();
+        }
+        
+        function initializeCanvases() {
+            const gameCanvas = document.getElementById('gameCanvas');
+            const numbersCanvas = document.getElementById('numbersCanvas');
+            
+            setCanvasSize(gameCanvas, 280, 240);
+            setCanvasSize(numbersCanvas, 280, 100);
+            
+            [gameCanvas, numbersCanvas].forEach(canvas => {
+                initializeCanvas(canvas);
+                setupCanvasEvents(canvas);
+            });
+        }
+        
+        function setCanvasSize(canvas, width, height) {
+            const scale = window.devicePixelRatio || 1;
+            canvas.width = width * scale;
+            canvas.height = height * scale;
+            canvas.style.width = width + 'px';
+            canvas.style.height = height + 'px';
+            
+            const ctx = canvas.getContext('2d');
+            ctx.scale(scale, scale);
+            ctx.fillStyle = 'rgba(200, 200, 200, 1)';
+            ctx.fillRect(0, 0, width, height);
+        }
+        
+        function initializeCanvas(canvas) {
+            const ctx = canvas.getContext('2d');
+            const width = canvas.width / (window.devicePixelRatio || 1);
+            const height = canvas.height / (window.devicePixelRatio || 1);
+            
+            ctx.fillStyle = 'rgba(200, 200, 200, 1)';
+            ctx.fillRect(0, 0, width, height);
+            
+            // Add subtle texture
+            for (let i = 0; i < width; i += 4) {
+                for (let j = 0; j < height; j += 4) {
+                    if (Math.random() > 0.5) {
+                        ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+                        ctx.fillRect(i, j, 2, 2);
+                    }
+                }
+            }
+        }
+        
+        function setupCanvasEvents(canvas) {
+            // Mouse Events
+            canvas.addEventListener('mousedown', handleStart);
+            canvas.addEventListener('mousemove', handleMove);
+            canvas.addEventListener('mouseup', handleEnd);
+            canvas.addEventListener('mouseout', handleEnd);
+            
+            // Touch Events
+            canvas.addEventListener('touchstart', handleStart, { passive: false });
+            canvas.addEventListener('touchmove', handleMove, { passive: false });
+            canvas.addEventListener('touchend', handleEnd, { passive: false });
+            canvas.addEventListener('touchcancel', handleEnd, { passive: false });
+        }
+        
+        function getCoordinates(event, canvas) {
+            const rect = canvas.getBoundingClientRect();
+            
+            let clientX, clientY;
+            if (event.touches && event.touches[0]) {
+                clientX = event.touches[0].clientX;
+                clientY = event.touches[0].clientY;
+            } else {
+                clientX = event.clientX;
+                clientY = event.clientY;
+            }
+            
+            return {
+                x: clientX - rect.left,
+                y: clientY - rect.top
+            };
+        }
+        
+        function handleStart(e) {
+            e.preventDefault();
+            isDragging = true;
+            activeCanvas = e.target;
+            lastPosition = getCoordinates(e, activeCanvas);
+        }
+        
+        function handleMove(e) {
+            if (!isDragging || !activeCanvas) return;
+            e.preventDefault();
+            
+            const ctx = activeCanvas.getContext('2d');
+            const currentPosition = getCoordinates(e, activeCanvas);
+            const scale = window.devicePixelRatio || 1;
+            
+            ctx.setTransform(scale, 0, 0, scale, 0, 0);
+            
+            ctx.globalCompositeOperation = 'destination-out';
+            ctx.lineWidth = 25;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            
+            ctx.beginPath();
+            ctx.moveTo(lastPosition.x, lastPosition.y);
+            ctx.lineTo(currentPosition.x, currentPosition.y);
+            ctx.stroke();
+            
+            lastPosition = currentPosition;
+            
+            if (activeCanvas.id === 'bonusCanvas') {
+                checkBonusProgress(activeCanvas);
+            } else if (activeCanvas.id === 'gameCanvas') {
+                checkGameProgress(activeCanvas);
+            }
+        }
+        
+        function handleEnd(e) {
+            e.preventDefault();
+            isDragging = false;
+            activeCanvas = null;
+        }
+        
+        function checkGameProgress(canvas) {
+            const ctx = canvas.getContext('2d');
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const pixels = imageData.data;
+            let transparent = 0;
+        
+            for (let i = 0; i < pixels.length; i += 4) {
+                if (pixels[i + 3] < 127) transparent++;
+            }
+        
+            const progress = transparent / (pixels.length / 4);
+            if (progress > 0.95) {  // Changed to 90%
+                document.getElementById('winMessage').style.display = 'flex';
+            }
+        }
+        
+        function checkBonusProgress(canvas) {
+            const ctx = canvas.getContext('2d');
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const pixels = imageData.data;
+            let transparent = 0;
+        
+            for (let i = 0; i < pixels.length; i += 4) {
+                if (pixels[i + 3] < 127) transparent++;
+            }
+        
+            const progress = transparent / (pixels.length / 4);
+            if (progress > 0.95) {  // Changed to 90%
+                document.getElementById('bonusWinMessage').style.display = 'flex';
+                createConfetti();  // Added confetti on bonus win
+            }
+        }
+        
+        function startBonus() {
+            const gameContainer = document.getElementById('gameContainer');
+            const winMessage = document.getElementById('winMessage');
+            const bonusContainer = document.getElementById('bonusContainer');
+            
+            gameContainer.style.opacity = '0';
+            winMessage.style.opacity = '0';
+            
+            setTimeout(() => {
+                gameContainer.style.display = 'none';
+                winMessage.style.display = 'none';
+                bonusContainer.style.display = 'block';
+                
+                const bonusCanvas = document.getElementById('bonusCanvas');
+                setCanvasSize(bonusCanvas, 280, 200);
+                initializeCanvas(bonusCanvas);
+                setupCanvasEvents(bonusCanvas);
+                
+                setTimeout(() => {
+                    bonusContainer.style.opacity = '1';
+                }, 50);
+            }, 300);
+        }
+        
+        // Confetti Animation
+        function createConfetti() {
+    // Create three layers of confetti
+    createConfettiLayer(30, 999);     // Background layer (behind overlay)
+    createConfettiLayer(25, 1001);    // Middle layer (between overlay and message)
+    createConfettiLayer(25, 1003);    // Front layer (in front of everything)
+}
+
+function createConfettiLayer(count, zIndex) {
+    const container = document.createElement('div');
+    container.className = 'confetti-container';
+    container.style.zIndex = zIndex;
+    document.body.appendChild(container);
+
+    function createParticle() {
+        const particle = document.createElement('div');
+        const colors = ['#9333ea', '#ec4899', '#FFD700', '#FF69B4', '#00CED1'];
+        
+        particle.className = 'confetti-particle';
+        particle.style.background = colors[Math.floor(Math.random() * colors.length)];
+
+        const x = Math.random() * window.innerWidth;
+        const y = -10;
+        const rotation = Math.random() * 360;
+        const speed = 2 + Math.random() * 3;
+        const rotationSpeed = (Math.random() - 0.5) * 10;
+        const maxDistance = window.innerHeight - 100 + Math.random() * 200;
+        let currentY = y;
+        let currentRotation = rotation;
+        let opacity = 1;
+
+        container.appendChild(particle);
+
+        function animate() {
+            currentY += speed;
+            currentRotation += rotationSpeed;
+            
+            if (currentY > maxDistance - 100) {
+                opacity = Math.max(0, (maxDistance - currentY) / 100);
+            }
+
+            particle.style.transform = `translate(${x}px, ${currentY}px) rotate(${currentRotation}deg)`;
+            particle.style.opacity = opacity;
+
+            if (currentY < maxDistance && opacity > 0) {
+                requestAnimationFrame(animate);
+            } else {
+                particle.remove();
+            }
+        }
+
+        animate();
+    }
+
+    for (let i = 0; i < count; i++) {
+        setTimeout(createParticle, Math.random() * 2500);
+    }
+
+    setTimeout(() => {
+        container.remove();
+    }, 7000);
+}
+        </script>
+</body>
+
+</html>
